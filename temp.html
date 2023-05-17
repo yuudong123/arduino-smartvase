@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Arduino Web Server</title>
+  </head>
+  <body>
+    <script src="https://code.jquery.com/jquery-latest.min.js"></script>
+    <script>
+      function thcheck(temperature, humidity) {
+        $.ajax({
+          type: "get",
+          url: "http://192.168.0.219:9090/thcheck?temperature=" + temperature + "&humidity=" + humidity,
+          success: function (result, status, xhr) {
+            console.log(result);
+          },
+        });
+      }
+    </script>
+  </body>
+</html>
