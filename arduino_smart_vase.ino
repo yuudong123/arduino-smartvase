@@ -1,13 +1,16 @@
-#include <DHT.h>  //// DHT11 센서를 쉽게 제어하기 위한 라이브러리를 추가해줍니다.
+#include <DHT.h>
+#include <ESP8266WiFi.h>
+#include <WiFiClient.h>
+#include <ESP8266HTTPClient.h>
 
 #define DHTTYPE DHT11
 
 #define LightSensor A0
-#define Led D5
+#define LED LED_BUILTIN
+#define Light D5
 #define Btn1 D1
 #define Btn2 D2
 #define Btn3 D3
-
 DHT tempSensor(D6, DHTTYPE);
 
 int btn1flag = 0;
@@ -15,67 +18,120 @@ int btn2flag = 0;
 int btn3flag = 0;
 boolean toggle_state = 0;
 
-void setup() {
-  Serial.begin(115200);
+const char *ssid = "hanul301";
+const char *password = "hanul301";
+
+void setup()
+{
+  Serial.begin(9600);
   pinMode(LightSensor, INPUT);
-  pinMode(Led, OUTPUT);
+  pinMode(LED, OUTPUT);
   pinMode(Btn1, INPUT_PULLUP);
   pinMode(Btn2, INPUT_PULLUP);
   pinMode(Btn3, INPUT_PULLUP);
-
   tempSensor.begin();
+
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("");
+  Serial.print("Connected to ");
+  Serial.println(ssid);
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());
 }
 
-void loop() {
-
-  if (digitalRead(Btn1) == 0) {
-    if (btn1flag == 0) {
+void loop()
+{
+  if (digitalRead(Btn1) == 0)
+  {
+    if (btn1flag == 0)
+    {
       btn1flag = 1;
       toggle_state = !toggle_state;
     }
-  } else {
-    if (btn1flag == 1) {
+  }
+  else
+  {
+    if (btn1flag == 1)
+    {
       btn1flag = 0;
-      tempCheck();
+      thCheck();
     }
   }
 
-  if (digitalRead(Btn2) == 0) {
-    if (btn2flag == 0) {
-      btn2flag = 1;
-      toggle_state = !toggle_state;
-    }
-  } else {
-    if (btn2flag == 1) {
-      btn2flag = 0;
-      tempCheck();
-    }
+  if (analogRead(LightSensor) < 150)
+  {
+    digitalWrite(Light, 1);
   }
-
-  if (digitalRead(Btn3) == 0) {
-    if (btn3flag == 0) {
-      btn3flag = 1;
-      toggle_state = !toggle_state;
-    }
-  } else {
-    if (btn3flag == 1) {
-      btn3flag = 0;
-      tempCheck();
-    }
+  else
+  {
+    digitalWrite(Light, 0);
   }
 }
 
-void tempCheck() {
-  int humidity = tempSensor.readHumidity();
-  int temperature = tempSensor.readTemperature();
+void thCheck()
+{
 
-  if (isnan(humidity) || isnan(temperature)) {
+  int t = tempSensor.readTemperature();
+  int h = tempSensor.readHumidity();
+
+  if (isnan(t) || isnan(h))
+  {
     Serial.println(F("센서와 연결되지 않았습니다"));
     return;
   }
+  String temperature = String(t);
+  String humidity = String(h);
+  String url = "http://192.168.0.219:9090/thcheck.ard?";
+  url += "temperature=" + temperature + "&humidity=" + humidity;
 
-  Serial.print(temperature);
-  Serial.print(" *C, ");
-  Serial.print(humidity);
-  Serial.println(" %");
+  Serial.println(url);
+  WiFiClient client;
+  HTTPClient http;
+  http.begin(client, url);
+  int httpResponseCode = http.GET();
+
+  if (httpResponseCode > 0)
+  {
+    String response = http.getString();
+    Serial.println(httpResponseCode);
+    if (httpResponseCode == 200)
+    {
+      blink(2);
+    }
+    else if (httpResponseCode == 400)
+    {
+      blink(4);
+    }
+    else if (httpResponseCode == 500)
+    {
+      blink(5);
+    }
+    Serial.println(response);
+  }
+  else
+  {
+    Serial.print("Error on HTTP request: ");
+    Serial.println(httpResponseCode);
+    blink(1);
+  }
+
+  http.end();
+}
+
+void blink(int cnt)
+{
+  for (int i = 0; i < cnt; i++)
+  {
+    digitalWrite(LED, 1);
+    delay(100);
+    digitalWrite(LED, 0);
+    delay(200);
+  }
 }
