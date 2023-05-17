@@ -5,5 +5,6 @@
 - Spring boot 2.7.11
 - mybatis, lombok, jdbc, oracle driver, thymeleaf(아직 미사용)
 
-## 아두이노 esp8266
--
+## 아두이노
+- esp8266
+- dht11 (온습도 센서)
