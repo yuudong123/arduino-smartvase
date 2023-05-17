@@ -9,4 +9,18 @@
 - esp8266
 - dht11 (온습도 센서)
 
+## DB 세팅
+
+```sql
+create table tbl_thcheck (
+    no number,
+    temperature varchar2(4),
+    humidity varchar2(3),
+    checkdate date default sysdate,
+    constraint pk_thcheck primary key (no)
+);
+
+commit;
+```
+
 ### temp.html은 현재 사용하지 않음.
