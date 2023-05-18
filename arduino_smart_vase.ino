@@ -21,10 +21,10 @@ boolean toggle_state = 0;
 const char *ssid = "hanul301";
 const char *password = "hanul301";
 
-void setup()
-{
+void setup() {
   Serial.begin(9600);
   pinMode(LightSensor, INPUT);
+  pinMode(Light, OUTPUT);
   pinMode(LED, OUTPUT);
   pinMode(Btn1, INPUT_PULLUP);
   pinMode(Btn2, INPUT_PULLUP);
@@ -34,8 +34,7 @@ void setup()
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
 
-  while (WiFi.status() != WL_CONNECTED)
-  {
+  while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
@@ -46,77 +45,75 @@ void setup()
   Serial.println(WiFi.localIP());
 }
 
-void loop()
-{
-  if (digitalRead(Btn1) == 0)
-  {
-    if (btn1flag == 0)
-    {
+void loop() {
+  if (digitalRead(Btn1) == 0) {
+    if (btn1flag == 0) {
       btn1flag = 1;
       toggle_state = !toggle_state;
     }
-  }
-  else
-  {
-    if (btn1flag == 1)
-    {
+  } else {
+    if (btn1flag == 1) {
       btn1flag = 0;
-      thCheck();
+      reqTOspring(1);
     }
   }
 
-  if (analogRead(LightSensor) < 150)
-  {
-    digitalWrite(Light, 1);
-  }
-  else
-  {
-    digitalWrite(Light, 0);
+  if (digitalRead(Btn2) == 0) {
+    if (btn2flag == 0) {
+      btn2flag = 1;
+      toggle_state = !toggle_state;
+    }
+  } else {
+    if (btn2flag == 1) {
+      btn2flag = 0;
+      reqTOspring(2);
+    }
   }
 }
 
-void thCheck()
-{
-
-  int t = tempSensor.readTemperature();
-  int h = tempSensor.readHumidity();
-
-  if (isnan(t) || isnan(h))
-  {
-    Serial.println(F("센서와 연결되지 않았습니다"));
-    return;
-  }
-  String temperature = String(t);
-  String humidity = String(h);
-  String url = "http://192.168.0.219:9090/thcheck.ard?";
-  url += "temperature=" + temperature + "&humidity=" + humidity;
-
-  Serial.println(url);
+void reqTOspring(int btn) {
   WiFiClient client;
   HTTPClient http;
+  String url = "none";
+
+  if (btn == 1) {
+    int t = tempSensor.readTemperature();
+    int h = tempSensor.readHumidity();
+    if (isnan(t) || isnan(h)) {
+      Serial.println("센서와 연결되지 않았습니다");
+      return;
+    }
+    String temperature = String(t);
+    String humidity = String(h);
+    url = "http://192.168.0.219:9090/thcheck.ard?";
+    url += "temperature=" + temperature + "&humidity=" + humidity;
+  } else if (btn == 2) {
+    String state = analogRead(LightSensor) > 300 ? "ON" : "OFF";
+    digitalWrite(Light, analogRead(LightSensor) > 300 ? 1 : 0);
+    url = "http://192.168.0.219:9090/ledchange.ard?";
+    url += "state=" + state;
+  }
+  if (url == "none") {
+    Serial.println("주소가 none입니다.");
+    return;
+  }
+
+  Serial.println(url);
   http.begin(client, url);
   int httpResponseCode = http.GET();
 
-  if (httpResponseCode > 0)
-  {
+  if (httpResponseCode > 0) {
     String response = http.getString();
     Serial.println(httpResponseCode);
-    if (httpResponseCode == 200)
-    {
+    if (httpResponseCode == 200) {
       blink(2);
-    }
-    else if (httpResponseCode == 400)
-    {
+    } else if (httpResponseCode == 400) {
       blink(4);
-    }
-    else if (httpResponseCode == 500)
-    {
+    } else if (httpResponseCode == 500) {
       blink(5);
     }
     Serial.println(response);
-  }
-  else
-  {
+  } else {
     Serial.print("Error on HTTP request: ");
     Serial.println(httpResponseCode);
     blink(1);
@@ -125,10 +122,8 @@ void thCheck()
   http.end();
 }
 
-void blink(int cnt)
-{
-  for (int i = 0; i < cnt; i++)
-  {
+void blink(int cnt) {
+  for (int i = 0; i < cnt; i++) {
     digitalWrite(LED, 1);
     delay(100);
     digitalWrite(LED, 0);

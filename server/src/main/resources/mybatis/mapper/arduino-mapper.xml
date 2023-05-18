@@ -3,4 +3,7 @@
 <mapper namespace="com.smartvase.server.mapper.ArduinoMapper">
   <insert id="thcheck"> insert into tbl_thcheck (no, temperature, humidity) values
     (seq_thcheck.nextval, #{temperature}, #{humidity}) </insert>
+
+  <insert id="ledchange"> insert into tbl_ledchange (no, state) values (seq_ledchange.nextval,
+    #{state}) </insert>
 </mapper>
