@@ -90,6 +90,7 @@ void reqTOspring(int btn) {
   } else if (btn == 2) {
     String state = analogRead(LightSensor) > 300 ? "ON" : "OFF";
     digitalWrite(Light, analogRead(LightSensor) > 300 ? 1 : 0);
+    Serial.println(analogRead(LightSensor));
     url = "http://192.168.0.219:9090/ledchange.ard?";
     url += "state=" + state;
   }
