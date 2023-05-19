@@ -7,4 +7,6 @@ import com.smartvase.server.domain.THDTO;
 @Mapper
 public interface ArduinoMapper {
   public void thcheck(THDTO dto);
+
+  public void ledchange(String state);
 }
