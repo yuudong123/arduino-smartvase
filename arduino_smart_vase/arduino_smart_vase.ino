@@ -1,7 +1,7 @@
 #include <DHT.h>
 #include <ESP8266WiFi.h>
-#include <WiFiClient.h>
 #include <ESP8266HTTPClient.h>
+#include <SoftwareSerial.h>
 
 #define DHTTYPE DHT11
 
@@ -11,15 +11,13 @@
 #define Btn1 D1
 #define Btn2 D2
 #define Btn3 D3
-DHT tempSensor(D6, DHTTYPE);
+DHT tempSensor(D7, DHTTYPE);
+SoftwareSerial bluetooth(D6, D4);
 
-int btn1flag = 0;
-int btn2flag = 0;
-int btn3flag = 0;
-boolean toggle_state = 0;
+bool anyBtnPressed = false;
 
-const char *ssid = "hanul301";
-const char *password = "hanul301";
+// const char *ssid = "hanul301";
+// const char *password = "hanul301";
 
 void setup() {
   Serial.begin(9600);
@@ -30,44 +28,23 @@ void setup() {
   pinMode(Btn2, INPUT_PULLUP);
   pinMode(Btn3, INPUT_PULLUP);
   tempSensor.begin();
-
   WiFi.mode(WIFI_STA);
-  WiFi.begin(ssid, password);
-
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-  Serial.println("");
-  Serial.print("Connected to ");
-  Serial.println(ssid);
-  Serial.print("IP address: ");
-  Serial.println(WiFi.localIP());
 }
 
 void loop() {
-  if (digitalRead(Btn1) == 0) {
-    if (btn1flag == 0) {
-      btn1flag = 1;
-      toggle_state = !toggle_state;
-    }
-  } else {
-    if (btn1flag == 1) {
-      btn1flag = 0;
-      reqTOspring(1);
-    }
+  if (digitalRead(Btn1) == 0 && !anyBtnPressed) {
+    anyBtnPressed = true;
+    reqTOspring(1);
   }
 
-  if (digitalRead(Btn2) == 0) {
-    if (btn2flag == 0) {
-      btn2flag = 1;
-      toggle_state = !toggle_state;
-    }
-  } else {
-    if (btn2flag == 1) {
-      btn2flag = 0;
-      reqTOspring(2);
-    }
+  if (digitalRead(Btn2) == 0 && !anyBtnPressed) {
+    anyBtnPressed = true;
+    reqTOspring(2);
+  }
+
+  if (digitalRead(Btn3) == 0 && !anyBtnPressed) {
+    anyBtnPressed = true;
+    setWiFi();
   }
 }
 
@@ -121,6 +98,49 @@ void reqTOspring(int btn) {
   }
 
   http.end();
+  anyBtnPressed = false;
+}
+
+void setWiFi() {
+  bluetooth.begin(9600);
+
+  if (WiFi.status() == WL_CONNECTED) { WiFi.disconnect(); }
+
+  while (!bluetooth.available()) {
+    blink(1);
+  }
+
+  String ssid = bluetooth.readStringUntil('\n');
+  ssid.trim();
+  Serial.print(ssid);
+
+  while (!bluetooth.available()) {
+    blink(1);
+  }
+
+  String password = bluetooth.readStringUntil('\n');
+  password.trim();
+  Serial.print(password);
+
+  WiFi.begin(ssid.c_str(), password.c_str());
+  int wait = 0;
+  while (WiFi.status() != WL_CONNECTED && wait < 30) {
+    delay(500);
+    Serial.print(".");
+    wait++;
+  }
+  if (wait >= 30) {
+    Serial.println("WiFi connection Failed.");
+    anyBtnPressed = false;
+    return;
+  } else {
+    Serial.println("");
+    Serial.print("Connected to ");
+    Serial.println(ssid);
+    Serial.print("IP address: ");
+    Serial.println(WiFi.localIP());
+  }
+  anyBtnPressed = false;
 }
 
 void blink(int cnt) {
