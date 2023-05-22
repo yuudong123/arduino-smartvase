@@ -14,12 +14,13 @@
 DHT tempSensor(D7, DHTTYPE);
 SoftwareSerial bluetooth(D6, D4);
 
-bool anyBtnPressed = false;
+bool isInProgress = false;
 
 // const char *ssid = "hanul301";
 // const char *password = "hanul301";
 
-void setup() {
+void setup()
+{
   Serial.begin(9600);
   pinMode(LightSensor, INPUT);
   pinMode(Light, OUTPUT);
@@ -31,32 +32,39 @@ void setup() {
   WiFi.mode(WIFI_STA);
 }
 
-void loop() {
-  if (digitalRead(Btn1) == 0 && !anyBtnPressed) {
-    anyBtnPressed = true;
+void loop()
+{
+  if (digitalRead(Btn1) == 0 && !isInProgress)
+  {
+    isInProgress = true;
     reqTOspring(1);
   }
 
-  if (digitalRead(Btn2) == 0 && !anyBtnPressed) {
-    anyBtnPressed = true;
+  if (digitalRead(Btn2) == 0 && !isInProgress)
+  {
+    isInProgress = true;
     reqTOspring(2);
   }
 
-  if (digitalRead(Btn3) == 0 && !anyBtnPressed) {
-    anyBtnPressed = true;
+  if (digitalRead(Btn3) == 0 && !isInProgress)
+  {
+    isInProgress = true;
     setWiFi();
   }
 }
 
-void reqTOspring(int btn) {
+void reqTOspring(int btn)
+{
   WiFiClient client;
   HTTPClient http;
   String url = "none";
 
-  if (btn == 1) {
+  if (btn == 1)
+  {
     int t = tempSensor.readTemperature();
     int h = tempSensor.readHumidity();
-    if (isnan(t) || isnan(h)) {
+    if (isnan(t) || isnan(h))
+    {
       Serial.println("센서와 연결되지 않았습니다");
       return;
     }
@@ -64,14 +72,17 @@ void reqTOspring(int btn) {
     String humidity = String(h);
     url = "http://192.168.0.219:9090/thcheck.ard?";
     url += "temperature=" + temperature + "&humidity=" + humidity;
-  } else if (btn == 2) {
+  }
+  else if (btn == 2)
+  {
     String state = analogRead(LightSensor) > 300 ? "ON" : "OFF";
     digitalWrite(Light, analogRead(LightSensor) > 300 ? 1 : 0);
     Serial.println(analogRead(LightSensor));
     url = "http://192.168.0.219:9090/ledchange.ard?";
     url += "state=" + state;
   }
-  if (url == "none") {
+  if (url == "none")
+  {
     Serial.println("주소가 none입니다.");
     return;
   }
@@ -80,33 +91,46 @@ void reqTOspring(int btn) {
   http.begin(client, url);
   int httpResponseCode = http.GET();
 
-  if (httpResponseCode > 0) {
+  if (httpResponseCode > 0)
+  {
     String response = http.getString();
     Serial.println(httpResponseCode);
-    if (httpResponseCode == 200) {
+    if (httpResponseCode == 200)
+    {
       blink(2);
-    } else if (httpResponseCode == 400) {
+    }
+    else if (httpResponseCode == 400)
+    {
       blink(4);
-    } else if (httpResponseCode == 500) {
+    }
+    else if (httpResponseCode == 500)
+    {
       blink(5);
     }
     Serial.println(response);
-  } else {
+  }
+  else
+  {
     Serial.print("Error on HTTP request: ");
     Serial.println(httpResponseCode);
     blink(1);
   }
 
   http.end();
-  anyBtnPressed = false;
+  isInProgress = false;
 }
 
-void setWiFi() {
+void setWiFi()
+{
   bluetooth.begin(9600);
 
-  if (WiFi.status() == WL_CONNECTED) { WiFi.disconnect(); }
+  if (WiFi.status() == WL_CONNECTED)
+  {
+    WiFi.disconnect();
+  }
 
-  while (!bluetooth.available()) {
+  while (!bluetooth.available())
+  {
     blink(1);
   }
 
@@ -114,7 +138,8 @@ void setWiFi() {
   ssid.trim();
   Serial.print(ssid);
 
-  while (!bluetooth.available()) {
+  while (!bluetooth.available())
+  {
     blink(1);
   }
 
@@ -124,27 +149,34 @@ void setWiFi() {
 
   WiFi.begin(ssid.c_str(), password.c_str());
   int wait = 0;
-  while (WiFi.status() != WL_CONNECTED && wait < 30) {
+  while (WiFi.status() != WL_CONNECTED && wait < 30)
+  {
     delay(500);
     Serial.print(".");
     wait++;
   }
-  if (wait >= 30) {
+  if (wait >= 30)
+  {
     Serial.println("WiFi connection Failed.");
-    anyBtnPressed = false;
+    isInProgress = false;
     return;
-  } else {
+  }
+  else
+  {
     Serial.println("");
     Serial.print("Connected to ");
     Serial.println(ssid);
     Serial.print("IP address: ");
     Serial.println(WiFi.localIP());
   }
-  anyBtnPressed = false;
+  blink(3);
+  isInProgress = false;
 }
 
-void blink(int cnt) {
-  for (int i = 0; i < cnt; i++) {
+void blink(int cnt)
+{
+  for (int i = 0; i < cnt; i++)
+  {
     digitalWrite(LED, 1);
     delay(100);
     digitalWrite(LED, 0);
